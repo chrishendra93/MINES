@@ -137,7 +137,6 @@ df_final = df_final.drop(columns=[-15,-14,-13,-12,-11,11,12,13,14])
 df_final=df_final.replace('.', np.nan)
 df_final = df_final.dropna()
 df_final['kmer']=list(map(lambda x:x.split(':')[2], df_final.index))
-
 #Load models
 #model_list = pd.read_csv('./Final_Models/names.txt', header=None, names=['file'])
 model_list = pd.read_csv(args.kmer_models, header=None, names=['file'])
@@ -151,8 +150,9 @@ for kmer in set(df_final['kmer']):
     kmer_df=kmer_df.drop(columns=['kmer'])
     fname=model_list.loc[kmer,'file']
     loaded_model = joblib.load(os.path.dirname(args.kmer_models)+'/'+fname)
-    p=loaded_model.predict(kmer_df)
-    kmer_df['pred']=p
+#    p=loaded_model.predict(kmer_df)
+    proba=loaded_model.predict_proba(kmer_df)[:,1]
+    kmer_df['pred']=proba
     kmer_df['key']=kmer_df.index
     tmp=kmer_df[['key','pred']]
     preds=pd.concat([preds,tmp])
@@ -174,5 +174,5 @@ preds=None
 mapping=None
 
 #Generate final bed file
-df=df[(df['pos']==0)&(df['pred']==1.0)&(df['drach_kmer'].isin(['GGACT', 'GGACA', 'AGACT', 'GGACC']))&(df['coverage']>=5)]
-df.to_csv(output,sep='\t', header=None, index=None, columns=['chr','start','stop','drach_kmer','key','strand','f_mod','coverage'])
+df=df[(df['pos']==0)&(df['drach_kmer'].isin(['GGACT', 'GGACA', 'AGACT', 'GGACC']))&(df['coverage']>=5)]
+df.to_csv(output,sep='\t', header=None, index=None, columns=['chr','start','stop','drach_kmer','key','strand','f_mod','coverage', 'pred'])
